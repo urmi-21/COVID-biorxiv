@@ -2,6 +2,7 @@ import sys
 import json
 import requests
 import subprocess
+from datetime import datetime
 
 #dict storing data
 collection={}
@@ -54,21 +55,42 @@ def get_terms():
     for key,value in collection[0].items():
         print(key)
 
+def searchall(keywords):
+    result=[]
+    for k in keywords:
+        result.extend(search(k))
+    return result
+
 def search(term):
     #search in collection is a list of dicts
     print('Searching',term)
     result=[]
     for d in collection:
+        #seach in all keys
         for key,value in d.items():
             if term.lower() in str(value).lower():
                 #print (d['rel_title'])
                 result.append(d)
-    print('total matches: {}'.format(len(result)))
+    #print('total matches: {}'.format(len(result)))
     return result
 
-def print_results(res):
+def get_title(res):
+    titles=[]
     for d in res:
-        print(d['rel_title'])
+        if not d['rel_title'] in titles:
+            titles.append(d['rel_title'])
+        #print(d['rel_title'])
+    return titles
+
+def filter_date(res,startdate):
+    '''
+    keep results by date
+    '''
+    filtered=[]
+    for d in res:
+        if datetime.strptime(d['rel_date'], '%Y-%m-%d')>=startdate:
+            filtered.append(d)
+    return filtered
 
 #step 1 update collection downloads around 15 MB .json data
 #update_collection()
@@ -80,7 +102,14 @@ collection=read_collection()
 #get_terms()
 
 #perform search
-res=search(' RNA-seq')
+#res=search(' RNA-seq')
+tosearch=[' RNA-seq','transcriptom','express','sequencing']
+res=searchall(tosearch)
+print(len(res))
+print(len(get_title(res)))
+fdate=datetime.strptime('2020-06-25', '%Y-%m-%d')
+print('filtering results before',fdate)
 
-#print titles from result
-print_results(res)
+final_res=get_title(filter_date(res,fdate))
+print(len(final_res))
+print('\n'.join(final_res))
